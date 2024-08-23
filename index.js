@@ -41,12 +41,12 @@ async function fetchSheetData(sheetName) {
 // Function to send a message to a Telegram group
 async function sendMessageToGroup(chatId, projectData) {
   const message = `
-Please review the Potential partner:
+Please review your Potential partner:
 
 Project Name: ${projectData.projectName}
 Twitter Link: ${projectData.twitterLink}
     
-Would you like to proceed with this partnership?
+Would you like to proceed partnership with the project?
   `;
 
   console.log(`Sending message to group with chat ID: ${chatId}`);
@@ -85,42 +85,62 @@ const processedProjects = new Set(); // To prevent repeated clicks on Yes/No but
 // Function to handle triggers based on required partnerships
 async function handleTriggers(chatId) {
   try {
+
     // Fetch Partnership Tracking Projects data
     const trackingData = await fetchSheetData('Partnership Tracking Projects');
+
+   
+      let premiumIndex = 1;
+
+      // Locate the premiumGroupId in the sheet
+      const premiumRow = trackingData[0].filter((id,ind)=>{
+        if(id==chatId){
+          premiumIndex=ind
+          return
+        }
+      });
+     
+      if (premiumRow === -1) {
+        throw new Error('Premium group ID not found in tracking data');
+      }
+
+      
 
     console.log(`Processing project with group ID: ${chatId}`);
 
     let partnerFound = false;
 
-    for (let k = 2; k < trackingData[0].length; k += 3) { // Step by 3 for each project block
-      const projectName = trackingData[0][k - 1]; // Adjusted index for Project Name
-      const twitterLink = trackingData[0][k];     // Adjusted index for Twitter Link
-
+    for (let k = premiumIndex; k < trackingData[0].length; k += 3) { // Step by 3 for each project block
+      const projectName = trackingData[0][k - 2]; // Adjusted index for Project Name
+      const twitterLink = trackingData[0][k-1];     // Adjusted index for Twitter Link
+      
       if (!lastSentPartnerIndex[projectName]) {
         lastSentPartnerIndex[projectName] = 1; // Initialize index for this project
       }
-
+      
       const partnerIndex = lastSentPartnerIndex[projectName];
       const totalPartners = trackingData.length - 1; // Subtracting 1 for the header row
 
+      // console.log(totalPartners,partnerIndex,'hello')
+
       if (partnerIndex <= totalPartners) {
         const partnerData = {
-          projectName: trackingData[partnerIndex][k - 1], // Adjusted index for Project Name
-          twitterLink: trackingData[partnerIndex][k],     // Adjusted index for Twitter Link
-          groupId: trackingData[partnerIndex][k + 1],     // Group ID remains the same
+          projectName: trackingData[partnerIndex][k - 2], // Adjusted index for Project Name
+          twitterLink: trackingData[partnerIndex][k-1],     // Adjusted index for Twitter Link
+          groupId: trackingData[partnerIndex][k ],     // Group ID remains the same
           projectId: `${partnerIndex}`, // Use the partner group ID as the project ID for callback
         };
 
-        if (partnerData.projectName && partnerData.twitterLink && partnerData.groupId) {
+        if (partnerData.projectName && partnerData.twitterLink && partnerData.groupId) { 
           console.log(`Sending partner #${partnerIndex} for project: ${projectName}`);
           await sendMessageToGroup(chatId, partnerData);
-          partnerFound = true;
+          partnerFound = true; 
         }
 
         lastSentPartnerIndex[projectName] += 1; // Move to the next partner for the next trigger
-
+  
         if (lastSentPartnerIndex[projectName] > totalPartners) {
-          lastSentPartnerIndex[projectName] = 1; // Reset to the beginning if we've sent all partners
+          lastSentPartnerIndex[projectName] += 1; // Reset to the beginning if we've sent all partners
         }
         break; // Send only one partner per project per trigger
       } else {
@@ -137,7 +157,7 @@ async function handleTriggers(chatId) {
 }
 
 // Command for manual activation
-bot.command('mypartner', async (ctx) => {
+bot.command('partner', async (ctx) => {
   const chatId = ctx.chat.id;
 
   const isPremium = await isPremiumProjectGroup(chatId);
@@ -185,27 +205,48 @@ bot.on('callback_query', async (ctx) => {
     try {
       // Fetch Partnership Tracking Projects data
       const trackingData = await fetchSheetData('Partnership Tracking Projects');
-      const premiumProjectName = trackingData[0][1];
-      const premiumProjectTwitterLink = trackingData[0][2];
+      
+      let index = 1;
+
+      // Locate the premiumGroupId in the sheet
+      const premiumRow = trackingData[0].findIndex(id => id === premiumGroupId);
+      if (premiumRow === -1) {
+        throw new Error('Premium group ID not found in tracking data');
+      }
+
+      
+   
+      const premiumProjectName = trackingData[0][premiumRow - 2]; // Premium project name
+      const premiumProjectTwitterLink = trackingData[0][premiumRow - 1]; // Premium project Twitter link
+
+      console.log(`Premium Project Name: ${premiumProjectName}`);
+      console.log(`Premium Project Twitter Link: ${premiumProjectTwitterLink}`);
+      
+
+
+    
+    
  
+ 
+
         // Fetch potential partner's data from trackingData or other source
-        const potentialPartnerData =await trackingData.find(row => row[3] === potentialGroupId); // Adjust index based on your data
+        const potentialPartnerData = trackingData.find(row => row[3] === potentialGroupId); // Adjust index based on your data
       const potentialPartnerName= potentialPartnerData[1];
-      console.log(potentialPartnerName)
+      
       // console.log(trackingData)
       console.log(`Sending potential project's details to premium project group.`);
 
       // Notify premium partner
-      await bot.telegram.sendMessage(premiumGroupId, `Thank you for your interest. Please wait for confirmation from the  ${potentialPartnerName} team.`);
+      await bot.telegram.sendMessage(premiumGroupId, `Thank you for your interest. Please wait for confirmation from the ${potentialPartnerName} team.`);
 
       // Send the potential project's details to the premium group's chat
       await bot.telegram.sendMessage(potentialGroupId, `
-        A potential partner has shown interest:
+        The below potential partner has shown interest in partnership with your project:
 
 Project Name: ${premiumProjectName}
 Twitter Link: ${premiumProjectTwitterLink}
 
-Please review and proceed with the partnership.
+Would you like to proceed partnership with the project?
       `, {
         reply_markup: {
           inline_keyboard: [
@@ -266,12 +307,12 @@ Please review and proceed with the partnership.
     try {
       // Notify potential partner group
       await bot.telegram.sendMessage(potentialGroupId, `
-Thank you for your interest. Please create a group, and we'll invite the team for further discussion.
+Thank you for your interest. Please create a group with the project, share the link here, and tag @collablynetworkCEO & @kundanCLB. We'll invite the team for further discussion.
       `);
 
       // Notify premium partner that the potential partner accepted
       await bot.telegram.sendMessage(premiumGroupId, `
-The potential partner ${potentialPartnerName} has accepted the partnership.
+${potentialPartnerName} has accepted your partnership Proposal. Please create a group with the project, share the link here, and tag @collablynetworkCEO & @kundanCLB. We'll invite the team for further discussion.
       `);
     } catch (error) {
       console.error('Error handling CONFIRM_YES response:', error);
@@ -296,7 +337,7 @@ Ok! We'll find more suitable projects for you.
 
       // Notify premium partner group
       await bot.telegram.sendMessage(premiumGroupId, `
-${potentialPartnerName} is not interested in the project.
+Sorry to inform you that ${potentialPartnerName} has decided not to pursue a partnership with your project at this time. But don’t worry, we’ll continue to find more partnerships for you.
       `);
     } catch (error) {
       console.error('Error handling CONFIRM_NO response:', error);
@@ -318,6 +359,8 @@ ${potentialPartnerName} is not interested in the project.
     }
   }
 });
+
+
 
 
 // Function to start the bot
