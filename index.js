@@ -374,4 +374,3 @@ bot.launch().then(() => {
 process.on('unhandledRejection', error => {
   console.error('Unhandled promise rejection:', error);
 });
-
