@@ -46,7 +46,7 @@ Please review your Potential partner:
 Project Name: ${projectData.projectName}
 Twitter Link: ${projectData.twitterLink}
     
-Would you like to proceed partnership with the project?
+Would you like to proceed with a partnership with the project?
   `;
 
   console.log(`Sending message to group with chat ID: ${chatId}`);
@@ -175,9 +175,6 @@ bot.command('partner', async (ctx) => {
 });
 
 
-
-
-
 // Handling Yes/No and Confirm Yes/No responses from Premium Projects
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery.data;
@@ -231,7 +228,10 @@ bot.on('callback_query', async (ctx) => {
 
         // Fetch potential partner's data from trackingData or other source
         const potentialPartnerData = trackingData.find(row => row[3] === potentialGroupId); // Adjust index based on your data
-      const potentialPartnerName= potentialPartnerData[1];
+        if (!potentialPartnerData) {
+          throw new Error('Potential partner data not found for the given group ID');
+        }
+        const potentialPartnerName = potentialPartnerData[1];
       
       // console.log(trackingData)
       console.log(`Sending potential project's details to premium project group.`);
@@ -359,8 +359,6 @@ Sorry to inform you that ${potentialPartnerName} has decided not to pursue a par
     }
   }
 });
-
-
 
 
 // Function to start the bot
