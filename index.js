@@ -6,9 +6,7 @@ const { google } = require('googleapis');
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const sheetId = process.env.GOOGLE_SHEET_ID;
 const apiKey = process.env.GOOGLE_API_KEY;
-console.log(botToken, "bot token")
-console.log(sheetId, "sheet Id")
-console.log(apiKey, "apiKey")
+
 if (!botToken || !sheetId || !apiKey) {
   console.error('Error: Missing environment variables. Please check your .env file.');
   process.exit(1); // Exit the process if any environment variable is missing
