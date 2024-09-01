@@ -162,6 +162,26 @@ async function handleTriggers(chatId) {
 }
 
 
+// // Command for manual activation
+// bot.command('partner', async (ctx) => {
+//   const chatId = ctx.chat.id;
+
+//   const isPremium = await isPremiumProjectGroup(chatId);
+//   if (!isPremium && !['7036220043', '6610902479'].includes(chatId.toString())) {
+//     await ctx.reply("This functionality works only for Premium partners of Collably Network.");
+//     return;
+//   }
+
+//   await handleTriggers(chatId);
+
+//   // Set an interval to automatically trigger the function every 6 hours
+//   setInterval(async () => {
+//     await handleTriggers(chatId);
+//   }, 21600000); // 6 hours = 21600000 ms
+// });
+
+let intervalMap = {}; // Object to store intervals for each chat
+
 // Command for manual activation
 bot.command('partner', async (ctx) => {
   const chatId = ctx.chat.id;
@@ -175,9 +195,27 @@ bot.command('partner', async (ctx) => {
   await handleTriggers(chatId);
 
   // Set an interval to automatically trigger the function every 6 hours
-  setInterval(async () => {
+  const intervalId = setInterval(async () => {
     await handleTriggers(chatId);
-  }, 21600000); // 6 hours = 21600000 ms
+  
+}, 86400000); // 24 hours = 86400000 ms
+
+  // Store the interval in the intervalMap for this chat
+  intervalMap[chatId] = intervalId;
+  // await ctx.reply("Partner functionality activated. It will now trigger every 24 hours.");
+}); 
+
+// Command to stop the server and cancel all commands
+bot.command('stop', async (ctx) => { 
+  const chatId = ctx.chat.id;
+
+  if (intervalMap[chatId]) {
+    clearInterval(intervalMap[chatId]); // Clear the interval for this chat
+    delete intervalMap[chatId]; // Remove from the map
+    // await ctx.reply("The automatic partner functionality has been stopped.");
+  } else {
+    await ctx.reply("No active partner functionality found to stop.");
+  }
 });
 
 
