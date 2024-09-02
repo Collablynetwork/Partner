@@ -341,7 +341,7 @@ Would you like to proceed partnership with the project?
     try {
       // Notify potential partner group
       await bot.telegram.sendMessage(potentialGroupId, `
-Thank you for your interest. Please create a group with the project, share the link here, and tag @collablynetworkCEO & @kundanCLB. We'll invite the team for further discussion.
+Thank you for your interest. Please create a group with the ${premiumProjectName}, share the link here, and tag @collablynetworkCEO & @kundanCLB. We'll invite the team for further discussion.
       `);
 
       // Notify premium partner that the potential partner accepted
